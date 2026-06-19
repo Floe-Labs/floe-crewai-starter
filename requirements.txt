@@ -1,0 +1,11 @@
+# floe-guard with the CrewAI extra (pulls in litellm). The budget guardrail that
+# hard-stops the crew before a call crosses your ceiling. No upper bound so newer
+# releases (e.g. the hosted read helper) are picked up automatically.
+floe-guard[crewai]>=0.1.0
+
+# CrewAI itself. Capped below the next major — CrewAI moves fast and majors can
+# break the Agent/Crew/Task API this starter uses.
+crewai>=1.0,<2.0
+
+# Loads OPENAI_API_KEY / FLOE_* from a local .env file.
+python-dotenv>=1.0,<2.0

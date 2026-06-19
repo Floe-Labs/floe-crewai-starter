@@ -1,0 +1,26 @@
+version: 2
+updates:
+  # GitHub Actions — weekly, grouped into one PR.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # pip — monthly, patch-only. Major and minor bumps are deferred to a human:
+  # CrewAI moves fast and minor releases have changed the Agent/Crew/Task API.
+  # Patch releases (incl. security fixes within a major) still flow automatically.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
