@@ -25,7 +25,6 @@ parse) falls back safely to the local cap.
 
 from __future__ import annotations
 
-import math
 import os
 import sys
 
@@ -124,14 +123,18 @@ def _fetch_hosted_remaining_usd() -> float | None:
 
 
 def _parse_usdc(value: object) -> float | None:
-    """Parse a USDC base-unit string into USD, or None if it isn't valid."""
+    """Parse a USDC base-unit integer string into USD, or None if it isn't valid."""
     if not isinstance(value, str):
         return None
+    s = value.strip()
+    if not s:
+        return None
     try:
-        raw = float(value)
+        # The API returns integer base-unit strings — parse exactly, not via float.
+        raw = int(s, 10)
     except ValueError:
         return None
-    if not math.isfinite(raw) or raw < 0:
+    if raw < 0:
         return None
     return raw / _USDC_DECIMALS
 

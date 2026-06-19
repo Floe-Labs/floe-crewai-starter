@@ -43,7 +43,7 @@ def _budget_usd() -> float:
     return value if value >= 0 else 1.00
 
 
-def stub_llm(turn: int) -> dict[str, object]:
+def stub_llm(turn: int) -> dict[str, int | str]:
     """A fake LLM call. No network, no API key — returns growing token usage."""
     return {
         "model": MODEL,
@@ -78,8 +78,8 @@ def main() -> None:
         response = stub_llm(turn)
         cost = guard.record(
             str(response["model"]),
-            int(response["prompt_tokens"]),  # type: ignore[arg-type]
-            int(response["completion_tokens"]),  # type: ignore[arg-type]
+            int(response["prompt_tokens"]),
+            int(response["completion_tokens"]),
         )
         print(
             f"  turn #{turn:>2}: +${cost:.4f}  "
