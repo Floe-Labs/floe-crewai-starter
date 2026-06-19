@@ -81,14 +81,14 @@ it runs.
 
 ### Optional: one-env-var hosted upgrade
 
-Set `FLOE_API_KEY` and `crew.py` reads your agent's **server-side remaining
-budget** from Floe's credit API and tightens the local ceiling to it. Get a key
-at the [Floe dashboard](https://dev-dashboard.floelabs.xyz/?utm_source=floe-crewai-starter&utm_medium=readme&utm_campaign=template).
+Set `FLOE_API_KEY` and `crew.py` makes one read-only GET to Floe's credit API
+for your agent's **server-side remaining budget** and tightens the local ceiling
+to it (the tighter of your auto-borrow headroom and session-spend remaining). Get
+a key at the [Floe dashboard](https://dev-dashboard.floelabs.xyz/?utm_source=floe-crewai-starter&utm_medium=readme&utm_campaign=template).
 
 Honest framing: this **reads** your remaining budget to inform the local cap. It
 does not move enforcement server-side by itself, and it fails safe to the local
-cap on any error. (The read helper ships in newer floe-guard releases; if your
-installed version predates it, the script says so and uses the local cap.)
+cap on any error (missing key, network, or parse).
 
 ## Honest scope
 
@@ -123,6 +123,14 @@ This starter ships the **local** floe-guard. Be clear about what that means:
 ```markdown
 [![guarded by floe-guard](https://img.shields.io/badge/guarded%20by-floe--guard-2f81f7.svg)](https://github.com/Floe-Labs/floe-guard)
 ```
+
+## Floe governed-agent starters
+
+One of three clonable templates that ship Floe spend-governance by default:
+
+- [floe-vercel-ai-starter](https://github.com/Floe-Labs/floe-vercel-ai-starter) — Vercel AI SDK agent, deploy to Vercel
+- [floe-crewai-starter](https://github.com/Floe-Labs/floe-crewai-starter) — CrewAI crew, run on Replit (you are here)
+- [eve-floe](https://github.com/Floe-Labs/eve-floe) — Vercel Eve agent with per-subagent budgets
 
 ## License
 

@@ -15,41 +15,36 @@ The ceiling defaults to $1.00; override with FLOE_BUDGET_USD.
 
 Optional hosted upgrade
 -----------------------
-If FLOE_API_KEY is set, this script *reads* your agent's server-side remaining
-budget from Floe's credit API and tightens the local cap to it. Be honest about
-what that is: the read only INFORMS the local, in-process ceiling. The
-un-bypassable, cross-vendor enforcement is the hosted Floe product running
-server-side — not this script. Any read failure falls back safely to the local
-cap. (The read helper ships in newer floe-guard releases; if your installed
-version doesn't have it yet, the script says so and uses the local cap.)
+If FLOE_API_KEY is set, this script makes ONE read-only GET to Floe's credit API
+for your agent's server-side remaining budget and tightens the local cap to it.
+Be honest about what that is: the read only INFORMS the local, in-process
+ceiling. The un-bypassable, cross-vendor enforcement is the hosted Floe product
+running server-side — not this script. Any read failure (missing key, network,
+parse) falls back safely to the local cap.
 """
 
 from __future__ import annotations
 
+import math
 import os
 import sys
 
+import requests
 from dotenv import load_dotenv
 
 from floe_guard import BudgetExceeded, BudgetGuard
-from floe_guard.hosted import hosted_enforcement_available
 from floe_guard.integrations.crewai import guard_crew
-
-# The hosted *read* helper (hosted_remaining_usd) and HostedEnforcementError ship
-# in newer floe-guard releases. Feature-detect them so the starter works on the
-# currently-published package today and auto-upgrades when they land — no
-# fabricated API, no hard dependency on an unreleased symbol.
-try:
-    from floe_guard.errors import HostedEnforcementError
-    from floe_guard.hosted import hosted_remaining_usd
-
-    _HOSTED_READ_AVAILABLE = True
-except ImportError:  # installed floe-guard predates the hosted read helper
-    _HOSTED_READ_AVAILABLE = False
 
 load_dotenv()
 
 MODEL = "gpt-4o"
+
+# The only Floe endpoint this starter talks to. Reading it is optional (gated on
+# FLOE_API_KEY) and only ever tightens the local cap.
+CREDIT_REMAINING_URL = "https://credit-api.floelabs.xyz/v1/agents/credit-remaining"
+# USDC has 6 decimals; the API returns base-unit integer strings.
+_USDC_DECIMALS = 1_000_000
+_HOSTED_READ_TIMEOUT_S = 10.0
 
 
 def _local_budget_usd() -> float:
@@ -67,30 +62,12 @@ def _local_budget_usd() -> float:
 def _resolve_ceiling() -> float:
     """Pick the spend ceiling, tightening to hosted remaining budget if available.
 
-    Always fail safe to the local cap: a missing key, an old floe-guard without
-    the read helper, or any hosted error must never *raise* the budget — it can
-    only lower it.
+    Always fail safe to the local cap: a missing key, a network failure, or an
+    unparseable response must never *raise* the budget — it can only lower it.
     """
     local_cap = _local_budget_usd()
-
-    if not hosted_enforcement_available():
-        return local_cap
-
-    if not _HOSTED_READ_AVAILABLE:
-        print(
-            "FLOE_API_KEY is set, but the installed floe-guard does not include the "
-            "hosted read helper (hosted_remaining_usd). Upgrade floe-guard to read "
-            f"server-side remaining budget. Using the local ${local_cap:.2f} cap.\n"
-        )
-        return local_cap
-
-    try:
-        remaining = hosted_remaining_usd()
-    except HostedEnforcementError as exc:
-        print(
-            f"Could not read hosted Floe budget ({exc}). "
-            f"Falling back to the local ${local_cap:.2f} cap.\n"
-        )
+    remaining = _fetch_hosted_remaining_usd()
+    if remaining is None:
         return local_cap
 
     ceiling = min(local_cap, remaining)
@@ -101,6 +78,62 @@ def _resolve_ceiling() -> float:
         "Un-bypassable cross-vendor enforcement is the hosted Floe product.\n"
     )
     return ceiling
+
+
+def _fetch_hosted_remaining_usd() -> float | None:
+    """Read server-side remaining USD from Floe, or None on any failure.
+
+    When FLOE_API_KEY is set, GET ``/v1/agents/credit-remaining`` and use the
+    tighter of ``headroomToAutoBorrow`` (credit headroom) and
+    ``sessionSpendRemaining`` (per-session cap) — both returned as USDC base-unit
+    strings (6 decimals). Fails safe: a missing key, network error, timeout,
+    non-OK status, or unparseable body returns None so the caller falls back to
+    the local cap. This only READS remaining budget — it is not server-side
+    enforcement; un-bypassable cross-vendor enforcement is the hosted Floe
+    product. The key is never logged or persisted.
+    """
+    key = os.environ.get("FLOE_API_KEY", "").strip()
+    if not key:
+        return None
+
+    try:
+        response = requests.get(
+            CREDIT_REMAINING_URL,
+            headers={"Authorization": f"Bearer {key}"},
+            timeout=_HOSTED_READ_TIMEOUT_S,
+        )
+        if not response.ok:
+            return None
+        data = response.json()
+    except Exception:
+        # Network error, timeout, bad JSON — fall back to the local cap.
+        return None
+
+    if not isinstance(data, dict):
+        return None
+
+    candidates = [
+        usd
+        for usd in (
+            _parse_usdc(data.get("headroomToAutoBorrow")),
+            _parse_usdc(data.get("sessionSpendRemaining")),
+        )
+        if usd is not None
+    ]
+    return min(candidates) if candidates else None
+
+
+def _parse_usdc(value: object) -> float | None:
+    """Parse a USDC base-unit string into USD, or None if it isn't valid."""
+    if not isinstance(value, str):
+        return None
+    try:
+        raw = float(value)
+    except ValueError:
+        return None
+    if not math.isfinite(raw) or raw < 0:
+        return None
+    return raw / _USDC_DECIMALS
 
 
 def build_crew(model: str = MODEL):
