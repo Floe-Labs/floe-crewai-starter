@@ -10,4 +10,4 @@ crewai>=1.0,<2.0
 python-dotenv>=1.0,<2.0
 
 # Used for the optional one-call hosted-budget read in crew.py.
-requests>=2.31,<3.0
+requests>=2.34.2,<3.0
