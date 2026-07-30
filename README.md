@@ -11,6 +11,19 @@ CrewAI's most expensive failure mode is the runaway loop — an agent re-feeds i
 growing scratchpad into the next call, costs climb every turn, and no one is
 awake to stop it. This starter ships the stop.
 
+## Start building with Floe
+
+One key for your agent's whole vendor bill — LLM, voice, telephony, search, data — metered per call and budget-capped. Let your coding agent set it up, or wire it yourself:
+
+| Path | One line |
+|---|---|
+| **Agent** — Claude Code / Cursor does the setup | paste: `Read https://dev-dashboard.floelabs.xyz/agents.md and set up Floe for this project.` |
+| **Skill** — install the Floe agent skill | `npx skills add floe-labs/agent-skills` |
+| **MCP** — hosted MCP server (65 tools) | `npx -y add-mcp https://mcp.floelabs.xyz/mcp` |
+| **NPM** — the CLI + SDK | `npm i -g floe-agent` |
+
+New accounts get a **$3 Welcome Credit (300 API credits)** — no card. [Set up with your AI tools →](https://floe-labs.gitbook.io/docs/getting-started/setup-with-ai-tools) · [Get a key →](https://dev-dashboard.floelabs.xyz)
+
 ## See it stop a loop (no API key needed)
 
 The killer first impression takes seconds and needs **no API key, no account, no
