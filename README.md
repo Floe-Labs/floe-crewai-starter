@@ -2,6 +2,7 @@
 
 [![guarded by floe-guard](https://img.shields.io/badge/guarded%20by-floe--guard-2f81f7.svg)](https://github.com/Floe-Labs/floe-guard)
 [![CI](https://github.com/Floe-Labs/floe-crewai-starter/actions/workflows/ci.yml/badge.svg)](https://github.com/Floe-Labs/floe-crewai-starter/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 **A governed CrewAI agent, clone-and-run.** A CrewAI crew whose spend is
 hard-capped by [floe-guard](https://github.com/Floe-Labs/floe-guard) out of the
