@@ -117,7 +117,7 @@ This starter ships the **local** floe-guard. Be clear about what that means:
   on Floe's side.
 - **Un-bypassable, cross-vendor enforcement** (caps that hold no matter which
   process or vendor spends — LLM tokens *and* paid x402 tool calls) is the hosted
-  [Floe](https://floelabs.xyz/?utm_source=floe-crewai-starter&utm_medium=readme&utm_campaign=template)
+  [Floe](https://floefinance.com/?utm_source=floe-crewai-starter&utm_medium=readme&utm_campaign=template)
   product.
 
 ## Configuration
