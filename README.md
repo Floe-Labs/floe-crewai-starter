@@ -4,9 +4,10 @@
 [![CI](https://github.com/Floe-Labs/floe-crewai-starter/actions/workflows/ci.yml/badge.svg)](https://github.com/Floe-Labs/floe-crewai-starter/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**A governed CrewAI agent, clone-and-run.** A CrewAI crew whose spend is
-hard-capped by [floe-guard](https://github.com/Floe-Labs/floe-guard) out of the
-box. The 3 AM infinite loop dies at **$1**, not **$400**.
+**Know what every run costs — then cap it.** A CrewAI crew that meters every LLM and
+tool call on one Floe ledger, so you see the real cost per run — with a
+[floe-guard](https://github.com/Floe-Labs/floe-guard) hard cap that kills the 3 AM
+infinite loop at **$1**, not **$400**.
 
 CrewAI's most expensive failure mode is the runaway loop — an agent re-feeds its
 growing scratchpad into the next call, costs climb every turn, and no one is
