@@ -1,6 +1,6 @@
 # floe-guard with the CrewAI extra (pulls in litellm). The budget guardrail that
-# hard-stops the crew before a call crosses your ceiling.
-floe-guard[crewai]>=0.1.0
+# checks the shared budget before each guarded LLM call.
+floe-guard[crewai]>=0.23.6
 
 # CrewAI itself. Capped below the next major — CrewAI moves fast and majors can
 # break the Agent/Crew/Task API this starter uses.

@@ -26,7 +26,10 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: pip install -r requirements.txt
       - run: pip install pytest
-      # The headline contract: the zero-key runaway-loop demo hard-stops at the
-      # ceiling with no API key and no network.
-      - name: Demo hard-stops at the budget ceiling
+      # Exercise the demo and real CrewAI wrapper without external provider calls.
+      - name: Budget enforcement and demo checks
+        env:
+          CREWAI_TELEMETRY_DISABLED: 'true'
+          OTEL_SDK_DISABLED: 'true'
+          LITELLM_LOCAL_MODEL_COST_MAP: 'True'
         run: pytest -q
