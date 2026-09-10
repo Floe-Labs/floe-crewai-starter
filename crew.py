@@ -1,10 +1,10 @@
 """crew.py — a real, budget-governed CrewAI crew.
 
-A minimal two-agent crew (a Researcher and a Writer) with a hard spend ceiling
-wired in by default. One line — ``guard_crew(guard)`` — caps the WHOLE crew:
-CrewAI runs every agent step through LiteLLM, so a single budget callback meters
-every agent and every task under one ceiling. If the crew would cross it, the
-next LLM call is refused (``BudgetExceeded``) instead of running.
+A minimal two-agent crew (a Researcher and a Writer) with a local budget guard
+wired in by default. Both agents share a ``budget_guarded_llm`` and one guard.
+The wrapper checks the budget in the LLM call path, outside LiteLLM callbacks.
+Once the budget is exhausted, the next LLM call raises ``BudgetExceeded``.
+Usage-based estimates can still underestimate the cost of an admitted call.
 
 Run it (needs an LLM key)::
 
@@ -32,7 +32,7 @@ import requests
 from dotenv import load_dotenv
 
 from floe_guard import BudgetExceeded, BudgetGuard
-from floe_guard.integrations.crewai import guard_crew
+from floe_guard.integrations.crewai import budget_guarded_llm, guard_crew
 
 load_dotenv()
 
@@ -139,15 +139,17 @@ def _parse_usdc(value: object) -> float | None:
     return raw / _USDC_DECIMALS
 
 
-def build_crew(model: str = MODEL):
+def build_crew(guard: BudgetGuard, model: str = MODEL):
     """Build a minimal two-agent research-and-write crew.
 
     Imported lazily inside main() so the module imports cleanly without crewai's
     heavier dependencies being exercised until a run is actually requested.
     """
-    from crewai import LLM, Agent, Crew, Process, Task
+    from crewai import Agent, Crew, Process, Task
 
-    llm = LLM(model=model)
+    # CrewAI initializes LiteLLM's callback registry from this explicit list.
+    # Preserve the metering callback as well as the wrapper's admission check.
+    llm = budget_guarded_llm(guard, model, callbacks=[guard_crew(guard)])
 
     researcher = Agent(
         role="Researcher",
@@ -199,17 +201,16 @@ def main() -> int:
 
     ceiling = _resolve_ceiling()
     guard = BudgetGuard(limit_usd=ceiling)
-    guard_crew(guard)  # one line — caps every agent and task in the crew
 
     print(f"Running a governed crew with a ${ceiling:.2f} ceiling...\n")
-    crew = build_crew()
+    crew = build_crew(guard)
 
     try:
         result = crew.kickoff()
     except BudgetExceeded as exc:
         print(
             f"\nfloe-guard stopped the crew at its ${ceiling:.2f} ceiling "
-            f"(spent ${exc.spent_usd:.4f}). The crossing call never ran."
+            f"(spent ${exc.spent_usd:.4f}). The next LLM call was refused."
         )
         return 0
 

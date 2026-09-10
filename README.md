@@ -77,22 +77,26 @@ cp .env.example .env       # then add your OPENAI_API_KEY
 python crew.py
 ```
 
-`crew.py` is a minimal two-agent crew (a Researcher and a Writer). One line caps
-the whole crew:
+`crew.py` is a minimal two-agent crew (a Researcher and a Writer). Both agents
+share one guarded LLM and one budget:
 
 ```python
 from floe_guard import BudgetGuard
-from floe_guard.integrations.crewai import guard_crew
+from floe_guard.integrations.crewai import budget_guarded_llm, guard_crew
 
 guard = BudgetGuard(limit_usd=1.00)
-guard_crew(guard)          # one line — enforces across every agent and task
-Crew(agents=[...], tasks=[...]).kickoff()
+llm = budget_guarded_llm(guard, "gpt-4o", callbacks=[guard_crew(guard)])
+# Pass llm=llm to every Agent in the crew, as build_crew() does in crew.py.
 ```
 
-CrewAI runs every agent step through LiteLLM, so a single budget callback meters
-the entire crew under one ceiling (default **$1.00**, override with
-`FLOE_BUDGET_USD`). The call that would cross it raises `BudgetExceeded` before
-it runs.
+The wrapper meters through LiteLLM and checks the budget in the LLM call path.
+Passing the callback explicitly keeps CrewAI initialization from replacing
+LiteLLM's metering callback registry with an empty list.
+Callback-only `guard_crew` registration cannot guarantee a stop because LiteLLM
+can swallow callback exceptions. Once the budget is exhausted, the next guarded
+call raises `BudgetExceeded` before dispatch. The ceiling defaults to **$1.00**
+(override with `FLOE_BUDGET_USD`). An admitted call can exceed its estimate,
+especially the first call, before final usage is known.
 
 ### Optional: one-env-var hosted upgrade
 
@@ -110,7 +114,7 @@ cap on any error (missing key, network, or parse).
 This starter ships the **local** floe-guard. Be clear about what that means:
 
 - **What it does:** prices token usage offline (from floe-guard's bundled cost
-  map) and hard-stops your crew *in-process* before a call crosses the ceiling.
+  map) and stops the next guarded LLM call when the budget is exhausted.
   No network, on by default.
 - **What it is not:** the local guard is **estimate-based and in-process**. It
   caps the LLM calls that run through this crew's LiteLLM path. It is not a
